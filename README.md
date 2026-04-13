@@ -33,4 +33,4 @@ npm run build
 npm run preview
 ```
 
-GitHub Pages 工作流已经放在 `.github/workflows/deploy.yml`。当前配置适合 `username.github.io` 这种用户主页仓库，不需要设置 Astro 的 `base`。
+GitHub Pages 工作流已经放在 `.github/workflows/deploy.yml`。当前配置适合 `Cynthia-213/blogs` 这个项目仓库，发布地址是 `https://cynthia-213.github.io/blogs/`。

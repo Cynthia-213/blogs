@@ -1,6 +1,7 @@
 ---
 import PostList from '../components/PostList.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../lib/links';
 import { getAllTags, getPublishedPosts } from '../lib/posts';
 
 const posts = await getPublishedPosts();
@@ -18,7 +19,7 @@ const tags = getAllTags(posts);
     tags.length > 0 && (
       <section class="tag-strip" aria-label="全部标签">
         {tags.map((tag) => (
-          <a href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>
+          <a href={withBase(`/tags/${encodeURIComponent(tag)}/`)}>#{tag}</a>
         ))}
       </section>
     )
