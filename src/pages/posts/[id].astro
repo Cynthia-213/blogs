@@ -1,0 +1,43 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { formatDate } from '../../lib/posts';
+
+type Post = CollectionEntry<'posts'>;
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) => data.draft !== true);
+
+  return posts.map((post) => ({
+    params: { id: post.id },
+    props: { post }
+  }));
+}
+
+const { post } = Astro.props as { post: Post };
+const { Content } = await render(post);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+  <article class="article">
+    <header class="article-header">
+      <a class="back-link" href="/">← Back Home</a>
+      <h1>{post.data.title}</h1>
+      <p>Posted at {formatDate(post.data.date)}</p>
+      {
+        post.data.tags.length > 0 && (
+          <ul class="tags" aria-label="文章标签">
+            {post.data.tags.map((tag) => (
+              <li>
+                <a href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </header>
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>

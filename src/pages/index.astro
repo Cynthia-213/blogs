@@ -1,0 +1,28 @@
+---
+import PostList from '../components/PostList.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getAllTags, getPublishedPosts } from '../lib/posts';
+
+const posts = await getPublishedPosts();
+const tags = getAllTags(posts);
+---
+
+<BaseLayout>
+  <section class="intro" aria-labelledby="intro-title">
+    <p class="eyebrow">Markdown Blog</p>
+    <h1 id="intro-title">保持思考</h1>
+    <p>在这里写文章、整理片段、留下最近正在反复咀嚼的念头。</p>
+  </section>
+
+  {
+    tags.length > 0 && (
+      <section class="tag-strip" aria-label="全部标签">
+        {tags.map((tag) => (
+          <a href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>
+        ))}
+      </section>
+    )
+  }
+
+  <PostList posts={posts} />
+</BaseLayout>

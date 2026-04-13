@@ -1,0 +1,33 @@
+---
+import type { Post } from '../lib/posts';
+import { formatDate } from '../lib/posts';
+
+interface Props {
+  posts: Post[];
+}
+
+const { posts } = Astro.props;
+---
+
+<div class="post-list">
+  {
+    posts.map((post) => (
+      <article class="post-item">
+        <h2>
+          <a href={`/posts/${post.id}/`}>{post.data.title}</a>
+        </h2>
+        <p class="post-date">Posted at {formatDate(post.data.date)}</p>
+        <p>{post.data.description}</p>
+        {post.data.tags.length > 0 && (
+          <ul class="tags" aria-label="文章标签">
+            {post.data.tags.map((tag) => (
+              <li>
+                <a href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </article>
+    ))
+  }
+</div>
