@@ -238,14 +238,24 @@ img {
   align-items: start;
 }
 
+.article {
+  grid-column: 2;
+}
+
 .article-toc {
   min-width: 0;
-  margin-top: 42px;
+  position: fixed;
+  top: 96px;
+  bottom: 28px;
+  left: max(24px, calc((100vw - 1160px) / 2));
+  z-index: 10;
+  width: 220px;
 }
 
 .article-toc details {
-  position: sticky;
-  top: 28px;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
 }
 
 .article-toc summary {
@@ -273,10 +283,19 @@ img {
 }
 
 .article-toc ol {
+  min-height: 0;
   margin: 12px 0 0;
   padding: 0 0 0 14px;
   border-left: 1px solid var(--border);
   list-style: none;
+}
+
+.article-toc nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 10px;
 }
 
 .article-toc li {
@@ -444,14 +463,26 @@ img {
     display: block;
   }
 
+  .article {
+    grid-column: auto;
+  }
+
   .article-toc {
+    position: static;
+    width: auto;
     margin: 20px 0 0;
   }
 
   .article-toc details {
     position: static;
+    height: auto;
     padding: 12px 0;
     border-bottom: 1px solid var(--border);
+  }
+
+  .article-toc nav {
+    overflow-y: visible;
+    padding-right: 0;
   }
 
   .archive-year li {
