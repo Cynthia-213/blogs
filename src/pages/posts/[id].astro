@@ -62,4 +62,247 @@ const tocHeadings = headings.filter((heading) => heading.depth >= 1 && heading.d
       </div>
     </article>
   </div>
+
+  <div class="note-tools" data-note-tools data-post-id={post.id}>
+    <button
+      class="notes-toggle"
+      type="button"
+      data-notes-toggle
+      aria-controls="article-notes-panel"
+      aria-expanded="false"
+    >
+      笔记 <span data-notes-count>0</span>
+    </button>
+
+    <button class="selection-action" type="button" data-add-selection hidden>添加笔记</button>
+
+    <section class="notes-panel" id="article-notes-panel" data-notes-panel hidden aria-labelledby="notes-title">
+      <header class="notes-panel-header">
+        <h2 id="notes-title">我的笔记</h2>
+        <button class="notes-close" type="button" data-notes-close aria-label="关闭笔记">×</button>
+      </header>
+
+      <div class="notes-panel-content">
+        <form class="note-form" data-note-form hidden>
+          <p class="note-form-heading" data-note-form-heading>添加笔记</p>
+          <blockquote class="note-quote" data-note-quote></blockquote>
+          <label for="note-content">笔记内容</label>
+          <textarea id="note-content" data-note-content rows="5" required></textarea>
+          <div class="note-form-actions">
+            <button class="button-secondary" type="button" data-note-cancel>取消</button>
+            <button class="button-primary" type="submit">保存</button>
+          </div>
+        </form>
+
+        <p class="notes-empty" data-notes-empty>还没有笔记</p>
+        <ul class="notes-list" data-notes-list></ul>
+      </div>
+    </section>
+  </div>
 </BaseLayout>
+
+<script>
+  type Note = {
+    id: string;
+    quote: string;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  const root = document.querySelector<HTMLElement>('[data-note-tools]');
+  const article = document.querySelector<HTMLElement>('.prose');
+
+  if (root && article) {
+    const postId = root.dataset.postId ?? 'article';
+    const storageKey = `blog-notes:${postId}`;
+    const selectionAction = root.querySelector<HTMLButtonElement>('[data-add-selection]');
+    const toggle = root.querySelector<HTMLButtonElement>('[data-notes-toggle]');
+    const panel = root.querySelector<HTMLElement>('[data-notes-panel]');
+    const closePanel = root.querySelector<HTMLButtonElement>('[data-notes-close]');
+    const form = root.querySelector<HTMLFormElement>('[data-note-form]');
+    const formHeading = root.querySelector<HTMLElement>('[data-note-form-heading]');
+    const quoteElement = root.querySelector<HTMLElement>('[data-note-quote]');
+    const contentInput = root.querySelector<HTMLTextAreaElement>('[data-note-content]');
+    const cancelButton = root.querySelector<HTMLButtonElement>('[data-note-cancel]');
+    const emptyState = root.querySelector<HTMLElement>('[data-notes-empty]');
+    const list = root.querySelector<HTMLUListElement>('[data-notes-list]');
+    const count = root.querySelector<HTMLElement>('[data-notes-count]');
+
+    if (
+      selectionAction &&
+      toggle &&
+      panel &&
+      closePanel &&
+      form &&
+      formHeading &&
+      quoteElement &&
+      contentInput &&
+      cancelButton &&
+      emptyState &&
+      list &&
+      count
+    ) {
+      let notes = readNotes();
+      let selectedQuote = '';
+      let editingId: string | null = null;
+
+      function readNotes(): Note[] {
+        try {
+          const stored = localStorage.getItem(storageKey);
+          const parsed = stored ? JSON.parse(stored) : [];
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveNotes() {
+        localStorage.setItem(storageKey, JSON.stringify(notes));
+      }
+
+      function makeId() {
+        return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function updatePanel() {
+        count.textContent = String(notes.length);
+        emptyState.hidden = notes.length > 0;
+        list.replaceChildren();
+
+        for (const note of notes) {
+          const item = document.createElement('li');
+          item.className = 'note-item';
+
+          const quote = document.createElement('blockquote');
+          quote.className = 'note-item-quote';
+          quote.textContent = note.quote;
+
+          const content = document.createElement('p');
+          content.className = 'note-item-content';
+          content.textContent = note.content;
+
+          const date = document.createElement('time');
+          date.className = 'note-item-date';
+          date.dateTime = note.updatedAt;
+          date.textContent = new Date(note.updatedAt).toLocaleString('zh-CN', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          });
+
+          const actions = document.createElement('div');
+          actions.className = 'note-item-actions';
+
+          const edit = document.createElement('button');
+          edit.className = 'note-action';
+          edit.type = 'button';
+          edit.textContent = '编辑';
+          edit.addEventListener('click', () => openForm(note.quote, note));
+
+          const remove = document.createElement('button');
+          remove.className = 'note-action note-action-danger';
+          remove.type = 'button';
+          remove.textContent = '删除';
+          remove.addEventListener('click', () => {
+            notes = notes.filter((item) => item.id !== note.id);
+            saveNotes();
+            updatePanel();
+          });
+
+          actions.append(edit, remove);
+          item.append(quote, content, date, actions);
+          list.append(item);
+        }
+      }
+
+      function openPanel() {
+        panel.hidden = false;
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+
+      function closeForm() {
+        form.hidden = true;
+        editingId = null;
+        selectedQuote = '';
+        contentInput.value = '';
+      }
+
+      function openForm(quote: string, note?: Note) {
+        selectedQuote = quote;
+        editingId = note?.id ?? null;
+        formHeading.textContent = note ? '编辑笔记' : '添加笔记';
+        quoteElement.textContent = quote;
+        contentInput.value = note?.content ?? '';
+        form.hidden = false;
+        openPanel();
+        contentInput.focus();
+      }
+
+      function hideSelectionAction() {
+        selectionAction.hidden = true;
+      }
+
+      function updateSelectionAction() {
+        const selection = window.getSelection();
+        const text = selection?.toString().trim() ?? '';
+        const anchor = selection?.anchorNode;
+
+        if (!selection || selection.isCollapsed || !text || !anchor || !article.contains(anchor)) {
+          if (!selectionAction.matches(':hover')) hideSelectionAction();
+          return;
+        }
+
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        selectedQuote = text;
+        selectionAction.style.left = `${Math.min(Math.max(12, rect.left), window.innerWidth - 112)}px`;
+        selectionAction.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 52)}px`;
+        selectionAction.hidden = false;
+      }
+
+      toggle.addEventListener('click', () => {
+        const isOpen = !panel.hidden;
+        panel.hidden = isOpen;
+        toggle.setAttribute('aria-expanded', String(!isOpen));
+        if (isOpen) closeForm();
+      });
+
+      closePanel.addEventListener('click', () => {
+        panel.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        closeForm();
+      });
+
+      cancelButton.addEventListener('click', closeForm);
+
+      selectionAction.addEventListener('mousedown', (event) => event.preventDefault());
+      selectionAction.addEventListener('click', () => {
+        if (selectedQuote) openForm(selectedQuote);
+        hideSelectionAction();
+      });
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const content = contentInput.value.trim();
+        if (!content || !selectedQuote) return;
+
+        const now = new Date().toISOString();
+        if (editingId) {
+          notes = notes.map((note) =>
+            note.id === editingId ? { ...note, content, updatedAt: now } : note
+          );
+        } else {
+          notes.unshift({ id: makeId(), quote: selectedQuote, content, createdAt: now, updatedAt: now });
+        }
+
+        saveNotes();
+        updatePanel();
+        closeForm();
+      });
+
+      document.addEventListener('selectionchange', updateSelectionAction);
+      window.addEventListener('resize', updateSelectionAction);
+      updatePanel();
+    }
+  }
+</script>
